@@ -49,7 +49,7 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.08);
       padding: 28px;
     }
-    h1, h2 { margin-top: 0; }
+    h1, h2, h3 { margin-top: 0; }
     .sub {
       color: #666;
       margin-bottom: 20px;
@@ -245,6 +245,16 @@
       color: white;
     }
     .danger:hover { background: #a92f2f; }
+    .success {
+      background: #1f9d55;
+      color: white;
+    }
+    .success:hover { background: #177742; }
+    .warning {
+      background: #c98a16;
+      color: white;
+    }
+    .warning:hover { background: #a46d0d; }
 
     .answer-box,
     .result-box,
@@ -312,6 +322,94 @@
     }
     .hidden { display: none !important; }
 
+    .mode-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .tab-btn {
+      border: 2px solid #d7e4ff;
+      background: #f7faff;
+      color: #2d5bdb;
+    }
+    .tab-btn.active {
+      background: #2d5bdb;
+      color: #fff;
+      border-color: #2d5bdb;
+    }
+
+    .flash-setup-note {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #f4f8ff;
+      border: 1px solid #d7e4ff;
+      color: #35518f;
+    }
+
+    .flashcard-screen {
+      display: none;
+    }
+    .flashcard-screen.show {
+      display: block;
+    }
+    .flashcard-wrap {
+      margin-top: 12px;
+      padding: 20px;
+      border: 1px solid #e7eaf3;
+      border-radius: 14px;
+      background: #fafcff;
+    }
+    .flashcard {
+      min-height: 280px;
+      border: 2px solid #dfe5f0;
+      border-radius: 18px;
+      padding: 24px;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+      transition: 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+    }
+    .flashcard:hover {
+      border-color: #7f9cf5;
+      background: #fcfdff;
+    }
+    .flash-side-label {
+      font-size: 13px;
+      color: #6a7485;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .flash-main {
+      font-size: 34px;
+      font-weight: 800;
+      color: #1f2d4d;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .flash-sub {
+      font-size: 18px;
+      color: #44516b;
+      white-space: pre-wrap;
+    }
+    .flash-meta {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #5b6780;
+      font-weight: 700;
+    }
+    .flash-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
     @media (display-mode: standalone) {
       body {
         user-select: none;
@@ -335,21 +433,38 @@
         flex-direction: column;
         gap: 4px;
       }
+      .flash-main {
+        font-size: 28px;
+      }
+      .flash-sub {
+        font-size: 16px;
+      }
+      .mode-tabs {
+        flex-direction: column;
+      }
+      .tab-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <h1>ITパスポート 1問1答クイズ</h1>
+      <h1>ITパスポート 学習アプリ</h1>
       <div class="sub">
-        全レベルで選択肢順を毎回ランダム化します。問題ごとに順番は固定されるので、前後移動で崩れません。
+        クイズと暗記カードを切り替えて学習できます。暗記カードでは略語の正式名称・意味・要点を反復できます。
       </div>
 
       <div id="installBox" class="install-box" aria-live="polite"></div>
 
+      <div class="mode-tabs">
+        <button type="button" class="tab-btn active" id="quizModeTab">クイズモード</button>
+        <button type="button" class="tab-btn" id="flashModeTab">暗記カードモード</button>
+      </div>
+
       <div id="setupScreen" class="section">
-        <h2>出題設定</h2>
+        <h2 id="setupTitle">クイズ出題設定</h2>
         <div id="statusBox" class="status-box" aria-live="polite"></div>
 
         <div class="setting-row">
@@ -377,14 +492,25 @@
           </div>
         </div>
 
-        <div class="buttons">
+        <div id="quizSetupButtons" class="buttons">
           <button class="primary" id="startBtn">通常モードで開始</button>
           <button class="secondary" id="startReviewBtn">間違えた問題だけ復習</button>
         </div>
 
-        <div class="review-box show" style="margin-top:18px;">
+        <div id="flashSetupButtons" class="buttons hidden">
+          <button class="primary" id="startFlashBtn">暗記カードを開始</button>
+          <button class="secondary" id="startWeakFlashBtn">あいまいカードだけ復習</button>
+        </div>
+
+        <div id="quizSetupNote" class="review-box show" style="margin-top:18px;">
           <strong>注意:</strong>
           復習モードは、これまでに間違えた問題がある場合だけ開始できます。履歴はブラウザの保存領域に残ります。
+        </div>
+
+        <div id="flashSetupNote" class="flash-setup-note hidden">
+          <strong>暗記カード学習:</strong>
+          表面に略語、裏面に正式名称・日本語・要点を表示します。タップで表裏反転できます。<br>
+          「覚えた」「あいまい」で記録でき、あいまいカードだけを後で回せます。
         </div>
       </div>
 
@@ -425,6 +551,55 @@
         </div>
       </div>
 
+      <div id="flashcardScreen" class="flashcard-screen">
+        <div class="topbar">
+          <div class="badge" id="flashProgress">カード 1 / 10</div>
+          <div class="score" id="flashModeLabel">略語暗記</div>
+        </div>
+
+        <div class="progress-wrap" aria-label="進捗">
+          <div class="progress-meta">
+            <span id="flashProgressText">進捗 10%</span>
+            <span id="flashSeenText">判定済み 0 / 10</span>
+          </div>
+          <div class="progress-bar" aria-hidden="true">
+            <div class="progress-fill" id="flashProgressFill"></div>
+          </div>
+        </div>
+
+        <div class="flashcard-wrap">
+          <div class="question-meta" id="flashCategoryMeta">分野: テクノロジ</div>
+
+          <button type="button" class="flashcard" id="flashcard" aria-live="polite">
+            <div class="flash-side-label" id="flashSideLabel">表面：略語</div>
+            <div class="flash-main" id="flashMain"></div>
+            <div class="flash-sub" id="flashSub"></div>
+          </button>
+
+          <div class="flash-meta" id="flashHint">
+            カードをタップすると表裏が切り替わります。
+          </div>
+
+          <div class="buttons">
+            <button class="secondary" id="flashPrevBtn">前のカード</button>
+            <button class="secondary" id="flashFlipBtn">表裏を切替</button>
+            <button class="secondary" id="flashNextBtn">次のカード</button>
+          </div>
+
+          <div class="buttons">
+            <button class="success" id="markKnownBtn">覚えた</button>
+            <button class="warning" id="markWeakBtn">あいまい</button>
+            <button class="danger" id="flashBackBtn">設定へ戻る</button>
+          </div>
+
+          <div class="flash-stats">
+            <div class="mini-card"><strong>覚えた</strong><div id="knownCountText">0枚</div></div>
+            <div class="mini-card"><strong>あいまい</strong><div id="weakCountText">0枚</div></div>
+            <div class="mini-card"><strong>カード総数</strong><div id="flashBankCountText">0枚</div></div>
+          </div>
+        </div>
+      </div>
+
       <div class="result-box" id="resultBox">
         <h2>結果</h2>
         <div class="result-score" id="finalScore"></div>
@@ -448,7 +623,6 @@
 
   <script>
     const questionBank = [
-      // 基本
       {
         id: "S001",
         category: "ストラテジ",
@@ -560,9 +734,8 @@
         explanation: "デジタル署名は、送信者本人であることの確認と、データが改ざんされていないことの確認を目的とする。"
       },
 
-      // 追加レベル3専用
       { id:"L3S001", category:"ストラテジ", level3Only:true, question:"3C分析の対象として適切な組合せはどれか。", level3Choices:["Customer・Competitor・Company","Customer・Cost・Company","Company・Capability・Customer","Competitor・Channel・Company"], answer:0, explanation:"3C分析は Customer（顧客）・Competitor（競合）・Company（自社）の3要素を分析する手法。" },
-      { id:"L3S002", category:"ストラテジ", level3Only:true, question:"PPMで『問題児』に当たるものはどれか。", level3Choices:["市場成長率は高いが市場占有率は低い事業","市場成長率も市場占有率も高い事業","市場成長率は低いが市場占有率は高い事業","市場成長率も市場占有率も低い事業"], answer:0, explanation:"PPM は Product Portfolio Management の略。市場成長率と市場占有率で事業を分類する手法で、問題児は市場成長率が高く市場占有率が低い事業。"},
+      { id:"L3S002", category:"ストラテジ", level3Only:true, question:"PPMで『問題児』に当たるものはどれか。", level3Choices:["市場成長率は高いが市場占有率は低い事業","市場成長率も市場占有率も高い事業","市場成長率は低いが市場占有率は高い事業","市場成長率も市場占有率も低い事業"], answer:0, explanation:"PPM は Product Portfolio Management の略。市場成長率と市場占有率で事業を分類する手法で、問題児は市場成長率が高く市場占有率が低い事業。" },
       { id:"L3S003", category:"ストラテジ", level3Only:true, question:"BPRと最も区別すべき概念はどれか。", level3Choices:["既存業務の単純な電子化","業務プロセスの抜本的見直し","組織横断の業務再設計","業務価値の再定義"], answer:0, explanation:"BPR は Business Process Reengineering の略。業務プロセスを抜本的に見直す考え方であり、単なる電子化とは異なる。" },
       { id:"L3S004", category:"ストラテジ", level3Only:true, question:"ROIの説明として最も適切なものはどれか。", level3Choices:["投資額に対して得られた利益の割合","売上高に対する営業利益の割合","自己資本に対する当期純利益の割合","総資産に対する売上高の割合"], answer:0, explanation:"ROI は Return On Investment の略。投資額に対してどれだけ利益を得られたかを示す指標。" },
       { id:"L3S005", category:"ストラテジ", level3Only:true, question:"KGIの説明として最も適切なものはどれか。", level3Choices:["最終的に達成すべき目標指標","目標達成の途中経過を測る指標","現場作業の工数を測る指標","障害件数を自動収集する指標"], answer:0, explanation:"KGI は Key Goal Indicator の略。最終的に達成すべき目標を示す指標であり、途中経過を測る KPI と区別する。" },
@@ -632,21 +805,39 @@
       { id:"L3T034", category:"テクノロジ", level3Only:true, question:"WANの説明として適切なのはどれか。", level3Choices:["広域ネットワーク","建物内だけの小規模ネットワーク","USB接続規格","Web記述言語"], answer:0, explanation:"WAN は Wide Area Network の略。広い範囲にまたがるネットワークを指し、LAN は Local Area Network。" }
     ];
 
-    const STORAGE_KEY = "it_passport_wrong_question_ids_v8";
+    const STORAGE_KEY = "it_passport_wrong_question_ids_v9";
+    const FLASH_WEAK_KEY = "it_passport_flash_weak_ids_v1";
+    const FLASH_KNOWN_KEY = "it_passport_flash_known_ids_v1";
+
     const setupScreen = document.getElementById("setupScreen");
     const quizScreen = document.getElementById("quizScreen");
+    const flashcardScreen = document.getElementById("flashcardScreen");
     const resultBox = document.getElementById("resultBox");
     const statusBox = document.getElementById("statusBox");
     const installBox = document.getElementById("installBox");
+
+    const setupTitle = document.getElementById("setupTitle");
     const questionCountSelect = document.getElementById("questionCount");
     const levelSelect = document.getElementById("levelSelect");
     const categoryCheckboxes = document.querySelectorAll(".categoryCheckbox");
+
+    const quizModeTab = document.getElementById("quizModeTab");
+    const flashModeTab = document.getElementById("flashModeTab");
+    const quizSetupButtons = document.getElementById("quizSetupButtons");
+    const flashSetupButtons = document.getElementById("flashSetupButtons");
+    const quizSetupNote = document.getElementById("quizSetupNote");
+    const flashSetupNote = document.getElementById("flashSetupNote");
+
     const startBtn = document.getElementById("startBtn");
     const startReviewBtn = document.getElementById("startReviewBtn");
+    const startFlashBtn = document.getElementById("startFlashBtn");
+    const startWeakFlashBtn = document.getElementById("startWeakFlashBtn");
+
     const retrySameBtn = document.getElementById("retrySameBtn");
     const reviewWrongBtn = document.getElementById("reviewWrongBtn");
     const returnSetupBtn = document.getElementById("returnSetupBtn");
     const backToSetupBtn = document.getElementById("backToSetupBtn");
+
     const progress = document.getElementById("progress");
     const scoreDisplay = document.getElementById("scoreDisplay");
     const progressFill = document.getElementById("progressFill");
@@ -662,12 +853,36 @@
     const explanationValue = document.getElementById("explanationValue");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
+
     const finalScore = document.getElementById("finalScore");
     const finalMessage = document.getElementById("finalMessage");
     const correctCountText = document.getElementById("correctCountText");
     const wrongCountText = document.getElementById("wrongCountText");
     const modeText = document.getElementById("modeText");
     const bankCountText = document.getElementById("bankCountText");
+
+    const flashProgress = document.getElementById("flashProgress");
+    const flashModeLabel = document.getElementById("flashModeLabel");
+    const flashProgressText = document.getElementById("flashProgressText");
+    const flashSeenText = document.getElementById("flashSeenText");
+    const flashProgressFill = document.getElementById("flashProgressFill");
+    const flashCategoryMeta = document.getElementById("flashCategoryMeta");
+    const flashcard = document.getElementById("flashcard");
+    const flashSideLabel = document.getElementById("flashSideLabel");
+    const flashMain = document.getElementById("flashMain");
+    const flashSub = document.getElementById("flashSub");
+    const flashHint = document.getElementById("flashHint");
+    const flashPrevBtn = document.getElementById("flashPrevBtn");
+    const flashFlipBtn = document.getElementById("flashFlipBtn");
+    const flashNextBtn = document.getElementById("flashNextBtn");
+    const markKnownBtn = document.getElementById("markKnownBtn");
+    const markWeakBtn = document.getElementById("markWeakBtn");
+    const flashBackBtn = document.getElementById("flashBackBtn");
+    const knownCountText = document.getElementById("knownCountText");
+    const weakCountText = document.getElementById("weakCountText");
+    const flashBankCountText = document.getElementById("flashBankCountText");
+
+    let appMode = "quiz";
 
     let currentQuiz = [];
     let currentQuestionIndex = 0;
@@ -676,6 +891,12 @@
     let score = 0;
     let mode = "通常";
     let lastConfig = null;
+
+    let flashcards = [];
+    let currentFlashIndex = 0;
+    let isFlashBackSide = false;
+    let flashSeenIds = new Set();
+    let flashModeName = "通常";
 
     function initQuestionCountOptions() {
       for (let i = 10; i <= 100; i += 10) {
@@ -736,17 +957,25 @@
       return copied;
     }
 
-    function getWrongQuestionIds() {
+    function getStoredIdArray(key) {
       try {
-        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        const parsed = JSON.parse(localStorage.getItem(key) || "[]");
         return Array.isArray(parsed) ? parsed : [];
       } catch {
         return [];
       }
     }
 
+    function saveStoredIdArray(key, ids) {
+      localStorage.setItem(key, JSON.stringify(ids));
+    }
+
+    function getWrongQuestionIds() {
+      return getStoredIdArray(STORAGE_KEY);
+    }
+
     function saveWrongQuestionIds(ids) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+      saveStoredIdArray(STORAGE_KEY, ids);
     }
 
     function addWrongQuestionId(questionId) {
@@ -760,6 +989,90 @@
     function removeWrongQuestionId(questionId) {
       const ids = getWrongQuestionIds().filter(id => id !== questionId);
       saveWrongQuestionIds(ids);
+    }
+
+    function getFlashWeakIds() {
+      return getStoredIdArray(FLASH_WEAK_KEY);
+    }
+
+    function getFlashKnownIds() {
+      return getStoredIdArray(FLASH_KNOWN_KEY);
+    }
+
+    function setFlashWeakIds(ids) {
+      saveStoredIdArray(FLASH_WEAK_KEY, ids);
+    }
+
+    function setFlashKnownIds(ids) {
+      saveStoredIdArray(FLASH_KNOWN_KEY, ids);
+    }
+
+    function addUniqueId(key, id) {
+      const ids = getStoredIdArray(key);
+      if (!ids.includes(id)) {
+        ids.push(id);
+        saveStoredIdArray(key, ids);
+      }
+    }
+
+    function removeIdFromStore(key, id) {
+      const ids = getStoredIdArray(key).filter(v => v !== id);
+      saveStoredIdArray(key, ids);
+    }
+
+    function markFlashKnown(id) {
+      addUniqueId(FLASH_KNOWN_KEY, id);
+      removeIdFromStore(FLASH_WEAK_KEY, id);
+      flashSeenIds.add(id);
+      updateFlashStats();
+    }
+
+    function markFlashWeak(id) {
+      addUniqueId(FLASH_WEAK_KEY, id);
+      removeIdFromStore(FLASH_KNOWN_KEY, id);
+      flashSeenIds.add(id);
+      updateFlashStats();
+    }
+
+    function extractAbbreviationInfo(explanation) {
+      if (!explanation) return null;
+      const match = explanation.match(/^([A-Za-z0-9]+)\s+は\s+(.+?)\s+の略。/);
+      if (!match) return null;
+      const abbr = match[1].trim();
+      const fullName = match[2].trim();
+      const rest = explanation.replace(match[0], "").trim();
+      return {
+        abbreviation: abbr,
+        fullName,
+        meaning: rest || "正式名称と要点を確認する。"
+      };
+    }
+
+    function buildFlashcardPool(config, weakOnly = false) {
+      let pool = questionBank.filter(q => {
+        if (!config.categories.includes(q.category)) return false;
+        if (q.level3Only && config.level !== 3) return false;
+        return extractAbbreviationInfo(q.explanation) !== null;
+      });
+
+      if (weakOnly) {
+        const weakIds = getFlashWeakIds();
+        pool = pool.filter(q => weakIds.includes(q.id));
+      }
+
+      const cards = pool.map(q => {
+        const info = extractAbbreviationInfo(q.explanation);
+        return {
+          id: q.id,
+          category: q.category,
+          abbreviation: info.abbreviation,
+          fullName: info.fullName,
+          description: info.meaning,
+          sourceQuestion: q.question
+        };
+      });
+
+      return shuffleArray(cards);
     }
 
     function getBaseChoicesForQuestion(q, level) {
@@ -806,6 +1119,38 @@
       return selected.map(q => buildPresentedQuestion(q, config.level));
     }
 
+    function switchAppMode(nextMode) {
+      appMode = nextMode;
+      hideStatus();
+      setupScreen.classList.remove("hidden");
+      quizScreen.classList.add("hidden");
+      flashcardScreen.classList.remove("show");
+      resultBox.classList.remove("show");
+      resultBox.style.display = "none";
+
+      if (nextMode === "quiz") {
+        quizModeTab.classList.add("active");
+        flashModeTab.classList.remove("active");
+        setupTitle.textContent = "クイズ出題設定";
+        quizSetupButtons.classList.remove("hidden");
+        flashSetupButtons.classList.add("hidden");
+        quizSetupNote.classList.remove("hidden");
+        quizSetupNote.classList.add("show");
+        flashSetupNote.classList.add("hidden");
+        flashSetupNote.classList.remove("show");
+      } else {
+        flashModeTab.classList.add("active");
+        quizModeTab.classList.remove("active");
+        setupTitle.textContent = "暗記カード設定";
+        quizSetupButtons.classList.add("hidden");
+        flashSetupButtons.classList.remove("hidden");
+        quizSetupNote.classList.add("hidden");
+        quizSetupNote.classList.remove("show");
+        flashSetupNote.classList.remove("hidden");
+        flashSetupNote.classList.add("show");
+      }
+    }
+
     function startQuiz(reviewMode = false, useLastConfig = false) {
       hideStatus();
 
@@ -842,9 +1187,51 @@
       resultBox.classList.remove("show");
       resultBox.style.display = "none";
       quizScreen.classList.remove("hidden");
+      flashcardScreen.classList.remove("show");
 
       renderQuestion();
       focusFirstChoiceButton();
+    }
+
+    function startFlashcards(weakOnly = false) {
+      hideStatus();
+
+      const categories = getSelectedCategories();
+      const count = Number(questionCountSelect.value);
+      const level = Number(levelSelect.value);
+
+      if (!categories.length) {
+        showStatus("少なくとも1つは分野を選んでください。");
+        return;
+      }
+
+      const config = { count, categories, level };
+      let cards = buildFlashcardPool(config, weakOnly);
+
+      if (!cards.length) {
+        if (weakOnly) {
+          showStatus("あいまいカードがありません。先に通常の暗記カード学習を行ってください。");
+        } else {
+          showStatus("選択条件に合う略語カードがありません。解説に略語がある問題だけが対象です。");
+        }
+        return;
+      }
+
+      cards = cards.slice(0, Math.min(count, cards.length));
+
+      flashcards = cards;
+      currentFlashIndex = 0;
+      isFlashBackSide = false;
+      flashSeenIds = new Set();
+      flashModeName = weakOnly ? "あいまいカード復習" : "通常カード学習";
+
+      setupScreen.classList.add("hidden");
+      quizScreen.classList.add("hidden");
+      resultBox.classList.remove("show");
+      resultBox.style.display = "none";
+      flashcardScreen.classList.add("show");
+
+      renderFlashcard();
     }
 
     function updateProgress() {
@@ -961,6 +1348,7 @@
 
     function showResult() {
       quizScreen.classList.add("hidden");
+      flashcardScreen.classList.remove("show");
       resultBox.classList.add("show");
       resultBox.style.display = "block";
 
@@ -975,13 +1363,13 @@
 
       let message = "";
       if (rate === 1) {
-        message = "満点です！このまま学習を続けましょう^^";
+        message = "このセットでは取りこぼしなし。ただし、理解が本物かどうかは別セットでも確認すべき。";
       } else if (rate >= 0.8) {
-        message = "素晴らしいです！合格ラインにすでに達しています！！";
+        message = "悪くないが、まだ定義の境界が甘い論点がある。";
       } else if (rate >= 0.6) {
-        message = "合格ラインくらいです！！合格率を上げるために、頑張っていきましょう！！";
+        message = "理解が浅い。似た用語を雰囲気で選んでいる。";
       } else {
-        message = "もう少しです！学習を続けましょう!!";
+        message = "弱い。レベル1に戻して定義を固め直した方が早い。";
       }
       finalMessage.textContent = message;
       retrySameBtn.focus();
@@ -990,20 +1378,124 @@
     function returnToSetup() {
       hideStatus();
       quizScreen.classList.add("hidden");
+      flashcardScreen.classList.remove("show");
       resultBox.classList.remove("show");
       resultBox.style.display = "none";
       setupScreen.classList.remove("hidden");
-      startBtn.focus();
+      if (appMode === "quiz") {
+        startBtn.focus();
+      } else {
+        startFlashBtn.focus();
+      }
+    }
+
+    function updateFlashStats() {
+      const knownIds = getFlashKnownIds();
+      const weakIds = getFlashWeakIds();
+      knownCountText.textContent = `${knownIds.length}枚`;
+      weakCountText.textContent = `${weakIds.length}枚`;
+      flashBankCountText.textContent = `${flashcards.length}枚`;
+    }
+
+    function updateFlashProgress() {
+      const total = flashcards.length;
+      const current = currentFlashIndex + 1;
+      const judgedCount = flashSeenIds.size;
+      const percent = Math.round((current / total) * 100);
+
+      flashProgress.textContent = `カード ${current} / ${total}`;
+      flashModeLabel.textContent = flashModeName;
+      flashProgressText.textContent = `進捗 ${percent}%`;
+      flashSeenText.textContent = `判定済み ${judgedCount} / ${total}`;
+      flashProgressFill.style.width = `${percent}%`;
+    }
+
+    function renderFlashcard() {
+      const card = flashcards[currentFlashIndex];
+      updateFlashProgress();
+      updateFlashStats();
+
+      flashCategoryMeta.textContent = `分野: ${card.category} / ID: ${card.id}`;
+
+      if (!isFlashBackSide) {
+        flashSideLabel.textContent = "表面：略語";
+        flashMain.textContent = card.abbreviation;
+        flashSub.textContent = "";
+        flashHint.textContent = "カードをタップして、正式名称・意味・要点を確認してください。";
+      } else {
+        flashSideLabel.textContent = "裏面：正式名称・意味・要点";
+        flashMain.textContent = card.fullName;
+        flashSub.textContent = `${card.description}\n\n出典問題: ${card.sourceQuestion}`;
+        flashHint.textContent = "理解できたら「覚えた」、まだ怪しければ「あいまい」で記録してください。";
+      }
+
+      flashPrevBtn.disabled = currentFlashIndex === 0;
+      flashNextBtn.disabled = currentFlashIndex === flashcards.length - 1;
+    }
+
+    function flipFlashcard() {
+      if (!flashcards.length) return;
+      isFlashBackSide = !isFlashBackSide;
+      renderFlashcard();
+    }
+
+    function goPrevFlashcard() {
+      if (currentFlashIndex > 0) {
+        currentFlashIndex -= 1;
+        isFlashBackSide = false;
+        renderFlashcard();
+      }
+    }
+
+    function goNextFlashcard() {
+      if (currentFlashIndex < flashcards.length - 1) {
+        currentFlashIndex += 1;
+        isFlashBackSide = false;
+        renderFlashcard();
+      }
+    }
+
+    function goToNextIfPossible() {
+      if (currentFlashIndex < flashcards.length - 1) {
+        currentFlashIndex += 1;
+        isFlashBackSide = false;
+        renderFlashcard();
+      } else {
+        renderFlashcard();
+      }
     }
 
     prevBtn.addEventListener("click", goPrev);
     nextBtn.addEventListener("click", goNext);
     startBtn.addEventListener("click", () => startQuiz(false));
     startReviewBtn.addEventListener("click", () => startQuiz(true));
+    startFlashBtn.addEventListener("click", () => startFlashcards(false));
+    startWeakFlashBtn.addEventListener("click", () => startFlashcards(true));
     retrySameBtn.addEventListener("click", () => startQuiz(mode === "間違えた問題だけ復習", true));
     reviewWrongBtn.addEventListener("click", () => startQuiz(true, true));
     returnSetupBtn.addEventListener("click", returnToSetup);
     backToSetupBtn.addEventListener("click", returnToSetup);
+
+    quizModeTab.addEventListener("click", () => switchAppMode("quiz"));
+    flashModeTab.addEventListener("click", () => switchAppMode("flash"));
+
+    flashcard.addEventListener("click", flipFlashcard);
+    flashFlipBtn.addEventListener("click", flipFlashcard);
+    flashPrevBtn.addEventListener("click", goPrevFlashcard);
+    flashNextBtn.addEventListener("click", goNextFlashcard);
+    flashBackBtn.addEventListener("click", returnToSetup);
+
+    markKnownBtn.addEventListener("click", () => {
+      const card = flashcards[currentFlashIndex];
+      markFlashKnown(card.id);
+      goToNextIfPossible();
+    });
+
+    markWeakBtn.addEventListener("click", () => {
+      const card = flashcards[currentFlashIndex];
+      markFlashWeak(card.id);
+      goToNextIfPossible();
+    });
 
     async function registerServiceWorker() {
       if (!("serviceWorker" in navigator)) return;
@@ -1017,6 +1509,7 @@
     window.addEventListener("load", async () => {
       initQuestionCountOptions();
       updateInstallMessage();
+      switchAppMode("quiz");
       await registerServiceWorker();
     });
   </script>
