@@ -1,4 +1,4 @@
-const CACHE_NAME = "it-passport-quiz-cache-v1";
+const CACHE_NAME = "it-passport-quiz-cache-v2";
 const ASSETS = [
   "./",
   "./index.html",
