@@ -366,6 +366,10 @@
       margin-top: 8px;
       text-align: center;
     }
+    @media (hover: none) and (pointer: coarse) {
+      /* タッチデバイス（iPhone等）ではキーボードショートカットヒントを非表示 */
+      .shortcut-hint { display: none; }
+    }
     .wrong-review-section {
       margin-top: 20px;
     }
@@ -390,6 +394,7 @@
       align-items: flex-start;
       gap: 10px;
       user-select: none;
+      -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
     .wrong-item-header:hover {
