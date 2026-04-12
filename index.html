@@ -348,6 +348,117 @@
       color: #35518f;
     }
 
+    .timer-display {
+      font-weight: 700;
+      font-size: 14px;
+      color: #5b6780;
+      background: #eef2f7;
+      padding: 6px 12px;
+      border-radius: 999px;
+    }
+    .timer-display.warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .shortcut-hint {
+      font-size: 12px;
+      color: #8a94a6;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .wrong-review-section {
+      margin-top: 20px;
+    }
+    .wrong-review-section h3 {
+      font-size: 16px;
+      color: #d64545;
+      margin-bottom: 12px;
+    }
+    .wrong-item {
+      border: 1px solid #f0d5d5;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .wrong-item-header {
+      background: #fff5f5;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wrong-item-header:hover {
+      background: #feecec;
+    }
+    .wrong-item-header .wrong-num {
+      color: #d64545;
+      font-size: 13px;
+      min-width: 28px;
+      padding-top: 2px;
+    }
+    .wrong-item-body {
+      padding: 14px 16px;
+      background: #fff;
+      border-top: 1px solid #f0d5d5;
+      display: none;
+    }
+    .wrong-item-body.open {
+      display: block;
+    }
+    .wrong-detail-line {
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .wrong-detail-line .label {
+      font-weight: 700;
+      color: #5b6780;
+      margin-right: 4px;
+    }
+    .wrong-detail-line .my-answer {
+      color: #d64545;
+    }
+    .wrong-detail-line .correct-answer {
+      color: #1f9d55;
+    }
+    .wrong-detail-line .explanation {
+      color: #444;
+    }
+    .auto-advance-option {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #455066;
+      font-weight: 700;
+    }
+    .auto-advance-option input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .auto-advance-progress {
+      display: none;
+      height: 3px;
+      background: #e7edf8;
+      border-radius: 999px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .auto-advance-progress.active {
+      display: block;
+    }
+    .auto-advance-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #1f9d55, #34d474);
+      transition: width 1.5s linear;
+    }
     .flashcard-screen {
       display: none;
     }
@@ -492,6 +603,11 @@
           </div>
         </div>
 
+        <div class="auto-advance-option">
+          <input type="checkbox" id="autoAdvanceCheck">
+          <label for="autoAdvanceCheck">正解後に自動で次の問題へ（1.5秒）</label>
+        </div>
+
         <div id="quizSetupButtons" class="buttons">
           <button class="primary" id="startBtn">通常モードで開始</button>
           <button class="secondary" id="startReviewBtn">間違えた問題だけ復習</button>
@@ -517,6 +633,7 @@
       <div id="quizScreen" class="hidden">
         <div class="topbar">
           <div class="badge" id="progress">第1問 / 10問</div>
+          <div class="timer-display" id="timerDisplay">00:00</div>
           <div class="score" id="scoreDisplay">正解数: 0</div>
         </div>
 
@@ -537,11 +654,17 @@
 
           <div class="choices" id="choicesArea" role="group" aria-labelledby="questionText"></div>
 
+          <div class="auto-advance-progress" id="autoAdvanceProgress">
+            <div class="auto-advance-fill" id="autoAdvanceFill"></div>
+          </div>
+
           <div class="buttons">
             <button class="secondary" id="prevBtn">前の問題</button>
             <button class="secondary" id="nextBtn">次の問題</button>
             <button class="danger" id="backToSetupBtn">設定へ戻る</button>
           </div>
+
+          <div class="shortcut-hint" id="shortcutHint">キー 1〜4 で選択 ／ → または Enter で次へ ／ ← で前へ</div>
 
           <div class="answer-box" id="answerBox" aria-live="polite">
             <div class="answer-title" id="answerTitle"></div>
@@ -609,13 +732,18 @@
           <div class="mini-card"><strong>正解数</strong><div id="correctCountText"></div></div>
           <div class="mini-card"><strong>不正解数</strong><div id="wrongCountText"></div></div>
           <div class="mini-card"><strong>出題モード</strong><div id="modeText"></div></div>
-          <div class="mini-card"><strong>問題バンク総数</strong><div id="bankCountText"></div></div>
+          <div class="mini-card"><strong>経過時間</strong><div id="elapsedTimeText">-</div></div>
         </div>
 
         <div class="buttons">
           <button class="primary" id="retrySameBtn">同じ設定でもう一度</button>
           <button class="secondary" id="reviewWrongBtn">間違えた問題だけ復習</button>
           <button class="secondary" id="returnSetupBtn">設定へ戻る</button>
+        </div>
+
+        <div id="wrongReviewSection" class="wrong-review-section" style="display:none;">
+          <h3>間違えた問題の確認</h3>
+          <div id="wrongReviewList"></div>
         </div>
       </div>
     </div>
@@ -808,6 +936,7 @@
     const STORAGE_KEY = "it_passport_wrong_question_ids_v9";
     const FLASH_WEAK_KEY = "it_passport_flash_weak_ids_v1";
     const FLASH_KNOWN_KEY = "it_passport_flash_known_ids_v1";
+    const AUTO_ADVANCE_KEY = "it_passport_auto_advance_v1";
 
     const setupScreen = document.getElementById("setupScreen");
     const quizScreen = document.getElementById("quizScreen");
@@ -854,12 +983,19 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
 
+    const timerDisplay = document.getElementById("timerDisplay");
+    const autoAdvanceProgress = document.getElementById("autoAdvanceProgress");
+    const autoAdvanceFill = document.getElementById("autoAdvanceFill");
+    const autoAdvanceCheck = document.getElementById("autoAdvanceCheck");
+
     const finalScore = document.getElementById("finalScore");
     const finalMessage = document.getElementById("finalMessage");
     const correctCountText = document.getElementById("correctCountText");
     const wrongCountText = document.getElementById("wrongCountText");
     const modeText = document.getElementById("modeText");
-    const bankCountText = document.getElementById("bankCountText");
+    const elapsedTimeText = document.getElementById("elapsedTimeText");
+    const wrongReviewSection = document.getElementById("wrongReviewSection");
+    const wrongReviewList = document.getElementById("wrongReviewList");
 
     const flashProgress = document.getElementById("flashProgress");
     const flashModeLabel = document.getElementById("flashModeLabel");
@@ -892,6 +1028,10 @@
     let mode = "通常";
     let lastConfig = null;
 
+    let quizStartTime = null;
+    let timerInterval = null;
+    let autoAdvanceTimer = null;
+
     let flashcards = [];
     let currentFlashIndex = 0;
     let isFlashBackSide = false;
@@ -906,7 +1046,63 @@
         if (i === 20) option.selected = true;
         questionCountSelect.appendChild(option);
       }
-      bankCountText.textContent = `${questionBank.length}問`;
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function startTimer() {
+      quizStartTime = Date.now();
+      timerDisplay.textContent = "00:00";
+      timerDisplay.classList.remove("warning");
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - quizStartTime) / 1000);
+        timerDisplay.textContent = formatTime(elapsed);
+        if (elapsed >= 60 * 20) timerDisplay.classList.add("warning");
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function getElapsedSeconds() {
+      if (!quizStartTime) return 0;
+      return Math.floor((Date.now() - quizStartTime) / 1000);
+    }
+
+    function isAutoAdvanceEnabled() {
+      return autoAdvanceCheck.checked;
+    }
+
+    function cancelAutoAdvance() {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+      autoAdvanceProgress.classList.remove("active");
+      autoAdvanceFill.style.transition = "none";
+      autoAdvanceFill.style.width = "0%";
+    }
+
+    function triggerAutoAdvance() {
+      cancelAutoAdvance();
+      autoAdvanceProgress.classList.add("active");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          autoAdvanceFill.style.transition = "width 1.5s linear";
+          autoAdvanceFill.style.width = "100%";
+        });
+      });
+      autoAdvanceTimer = setTimeout(() => {
+        autoAdvanceProgress.classList.remove("active");
+        autoAdvanceFill.style.transition = "none";
+        autoAdvanceFill.style.width = "0%";
+        goNext();
+      }, 1500);
     }
 
     function showStatus(message) {
@@ -1189,6 +1385,7 @@
       quizScreen.classList.remove("hidden");
       flashcardScreen.classList.remove("show");
 
+      startTimer();
       renderQuestion();
       focusFirstChoiceButton();
     }
@@ -1303,6 +1500,10 @@
 
       renderQuestion();
       nextBtn.focus();
+
+      if (isCorrect && isAutoAdvanceEnabled() && currentQuestionIndex < currentQuiz.length - 1) {
+        triggerAutoAdvance();
+      }
     }
 
     function showAnswerBox() {
@@ -1329,6 +1530,7 @@
     }
 
     function goPrev() {
+      cancelAutoAdvance();
       if (currentQuestionIndex > 0) {
         currentQuestionIndex -= 1;
         renderQuestion();
@@ -1337,6 +1539,7 @@
     }
 
     function goNext() {
+      cancelAutoAdvance();
       if (currentQuestionIndex === currentQuiz.length - 1) {
         showResult();
         return;
@@ -1347,6 +1550,9 @@
     }
 
     function showResult() {
+      stopTimer();
+      cancelAutoAdvance();
+
       quizScreen.classList.add("hidden");
       flashcardScreen.classList.remove("show");
       resultBox.classList.add("show");
@@ -1354,12 +1560,13 @@
 
       const wrongCount = currentQuiz.length - score;
       const rate = score / currentQuiz.length;
+      const elapsed = getElapsedSeconds();
 
       finalScore.textContent = `${currentQuiz.length}問中 ${score}問正解`;
       correctCountText.textContent = `${score}問`;
       wrongCountText.textContent = `${wrongCount}問`;
       modeText.textContent = `${mode} / レベル${lastConfig.level}`;
-      bankCountText.textContent = `${questionBank.length}問`;
+      elapsedTimeText.textContent = formatTime(elapsed);
 
       let message = "";
       if (rate === 1) {
@@ -1372,10 +1579,53 @@
         message = "弱い。レベル1に戻して定義を固め直した方が早い。";
       }
       finalMessage.textContent = message;
+
+      renderWrongReview();
       retrySameBtn.focus();
     }
 
+    function renderWrongReview() {
+      wrongReviewList.innerHTML = "";
+      const wrongItems = currentQuiz
+        .map((q, i) => ({ q, selected: selectedAnswers[i], judged: judgedQuestions[i] }))
+        .filter(({ q, selected }) => selected !== null && selected !== q.answer);
+
+      if (wrongItems.length === 0) {
+        wrongReviewSection.style.display = "none";
+        return;
+      }
+
+      wrongReviewSection.style.display = "block";
+
+      wrongItems.forEach(({ q, selected }, idx) => {
+        const item = document.createElement("div");
+        item.className = "wrong-item";
+
+        const header = document.createElement("div");
+        header.className = "wrong-item-header";
+        header.innerHTML = `<span class="wrong-num">✗ ${idx + 1}</span><span>${q.question}</span>`;
+
+        const body = document.createElement("div");
+        body.className = "wrong-item-body";
+        body.innerHTML = `
+          <div class="wrong-detail-line"><span class="label">あなたの回答：</span><span class="my-answer">✗ ${q.choices[selected]}</span></div>
+          <div class="wrong-detail-line"><span class="label">正解：</span><span class="correct-answer">○ ${q.choices[q.answer]}</span></div>
+          <div class="wrong-detail-line"><span class="label">解説：</span><span class="explanation">${q.explanation}</span></div>
+        `;
+
+        header.addEventListener("click", () => {
+          body.classList.toggle("open");
+        });
+
+        item.appendChild(header);
+        item.appendChild(body);
+        wrongReviewList.appendChild(item);
+      });
+    }
+
     function returnToSetup() {
+      stopTimer();
+      cancelAutoAdvance();
       hideStatus();
       quizScreen.classList.add("hidden");
       flashcardScreen.classList.remove("show");
@@ -1497,6 +1747,40 @@
       goToNextIfPossible();
     });
 
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (appMode === "quiz" && !quizScreen.classList.contains("hidden")) {
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= 4) {
+          e.preventDefault();
+          if (!judgedQuestions[currentQuestionIndex]) {
+            const btns = choicesArea.querySelectorAll(".choice-btn:not(:disabled)");
+            if (btns[num - 1]) btns[num - 1].click();
+          }
+          return;
+        }
+        if (e.key === "ArrowRight" || (e.key === "Enter" && document.activeElement !== nextBtn && document.activeElement !== prevBtn && document.activeElement !== backToSetupBtn)) {
+          if (judgedQuestions[currentQuestionIndex]) {
+            e.preventDefault();
+            cancelAutoAdvance();
+            goNext();
+          }
+          return;
+        }
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          cancelAutoAdvance();
+          goPrev();
+          return;
+        }
+      }
+    });
+
+    autoAdvanceCheck.addEventListener("change", () => {
+      localStorage.setItem(AUTO_ADVANCE_KEY, autoAdvanceCheck.checked ? "1" : "0");
+    });
+
     async function registerServiceWorker() {
       if (!("serviceWorker" in navigator)) return;
       try {
@@ -1510,6 +1794,8 @@
       initQuestionCountOptions();
       updateInstallMessage();
       switchAppMode("quiz");
+      const savedAutoAdvance = localStorage.getItem(AUTO_ADVANCE_KEY);
+      if (savedAutoAdvance === "1") autoAdvanceCheck.checked = true;
       await registerServiceWorker();
     });
   </script>
